@@ -73,8 +73,13 @@ class Pawn(Piece):
 
     def get_valid_moves(self, board: object) -> list:
         direction: int = -1 if self.color == 'white' else 1
+        if self.y_pos in (100, 600):
+            if board.board[self.board_pos + (16 * direction)] == 0:
+                print('here')
+                self.valid_moves.append(self.board_pos + (16 * direction))
         if board.board[self.board_pos + (8 * direction)] == 0:
             self.valid_moves.append(self.board_pos + (8 * direction))
+        print(self.valid_moves)
         return self.valid_moves
 
     def draw(self, win: pygame.Surface) -> None:
