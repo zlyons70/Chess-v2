@@ -13,9 +13,9 @@ pygame.display.set_caption("Chess")
 def get_pos_from_mouse(pos: tuple[int, int]) -> int:
     '''Returns the array position of user mouse click'''
     x_pos, y_pos = pos
-    row = y_pos // SQUARE_SIZE
-    col = x_pos // SQUARE_SIZE
-    array_pos = row * 8 + col
+    row: int = y_pos // SQUARE_SIZE
+    col: int = x_pos // SQUARE_SIZE
+    array_pos: int = row * 8 + col
     return array_pos
 
 def main() -> None:
