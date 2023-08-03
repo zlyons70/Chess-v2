@@ -13,6 +13,7 @@ class Board:
         self.create_board()
         self.board_to_fen()
         self.en_passant: int = -1
+        self.pieces: list = []
     
     def draw_squares(self, win: Surface) -> None:
         '''Draws the squares onto the board'''
@@ -22,7 +23,7 @@ class Board:
                 pygame.draw.rect(win, LIGHT, (row * SQUARE_SIZE, col * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE))
         self.draw_piece(win)
 
-    def get_piece(self, pos: int) -> int:
+    def get_piece(self, pos: int) -> object:
         '''Returns the piece at the given position'''
         return self.board[pos]
 
@@ -107,33 +108,47 @@ class Board:
         valid_moves: list = []
         if piece != 0:
             valid_moves = piece.get_valid_moves(self)
+            print("Valid Moves: ", valid_moves)
         return valid_moves
+    
+    def get_all_pieces(self) -> None:
+        '''This method gets all the pieces on the board and places them in a list'''
+        for piece in self.board:
+            if piece != 0:
+                self.pieces.append(piece)
     
     def move(self, piece: object, destination: int) -> None:
         '''This method moves pieces on the board'''
+        self.en_passant = -1
         self.board[piece.board_pos] = 0
         self.board[destination] = piece
+        previous: int = piece.board_pos
         piece.move(destination)
         # Here I need to check to see if the piece is a pawn for en passant or promotion
         # I also need to check to see if it is a king or rook for castling
         if piece is isinstance(piece, Pawn):
             if piece.y_pos in [0, 700]:
                 self.promote(piece)
+            if abs(previous - destination) == 16:
+                self.en_passant = piece.board_pos
                 
         if piece is isinstance(piece, King):
             piece.king_side = False
             piece.queen_side = False
             
         if piece is isinstance(piece, Rook):
-            if piece.board_pos != 0 and piece.color == 'black':
-                piece.queen_side = False
-            if piece.board_pos != 7 and piece.color == 'black':
-                piece.king_side = False
-            if piece.board_pos != 56 and piece.color == 'white':
-                piece.queen_side = False
-            if piece.board_pos != 63 and piece.color == 'white':
-                piece.king_side = False
-                
+            piece.moved = True
+        self.get_all_pieces()
+        for piece_on_board in self.pieces:
+            piece_on_board.clear_moves()
+    
+    def capture(self, piece: object, destination: int) -> None:
+        '''This method handles capturing pieces'''
+        piece_to_capture: object = self.board[destination]
+        if piece_to_capture.color != piece.color:
+            self.board[destination] = 0
+            del piece_to_capture
+            self.move(piece, destination)
     
     def promote(self, piece: object) -> None:
         '''This method handles pawn promotion'''
@@ -141,3 +156,11 @@ class Board:
     
     def castle(self, piece: object, destination: int) -> None:
         '''This method handles castling'''
+        
+    def generate_all_moves(self) -> dict:
+        '''This method generates all the moves for all the pieces on the board'''
+        legal_moves: dict = {}
+        for piece in self.pieces:
+            legal_moves[piece.board_pos] = self.get_valid_moves(piece)
+        print("Legal Moves: ", legal_moves)
+        return legal_moves
