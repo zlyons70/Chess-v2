@@ -103,6 +103,7 @@ class Pawn(Piece):
             if board.board[self.board_pos + 9 * direction] != 0 and board.board[self.board_pos + 9 * direction].color != self.color:
                 self.valid_moves.append(self.board_pos + 9 * direction)
         if board.en_passant != -1:
+            print(board.en_passant)
             if self.color == 'white':
                 temp = self.board_pos - 9
                 if self.board_pos - board.en_passant == -1:
@@ -110,6 +111,13 @@ class Pawn(Piece):
                 else:
                     if self.board_pos - board.en_passant == 1 and temp % 8 != 7:
                         self.valid_moves.append(self.board_pos - 9)
+            else:
+                if self.board_pos - board.en_passant == 1:
+                    self.valid_moves.append(self.board_pos + 7)
+                else:
+                    temp = self.board_pos + 9
+                    if self.board_pos - board.en_passant == -1 and temp % 8 != 0:
+                        self.valid_moves.append(self.board_pos + 9)
         return self.valid_moves
 
     def draw(self, win: pygame.Surface) -> None:

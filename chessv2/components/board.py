@@ -14,6 +14,9 @@ class Board:
         self.board_to_fen()
         self.en_passant: int = -1
         self.pieces: list = []
+        self.turn = 'white'
+        self.old_piece: object = None
+        self.full_move_counter: int = 0
     
     def draw_squares(self, win: Surface) -> None:
         '''Draws the squares onto the board'''
@@ -123,29 +126,41 @@ class Board:
         self.board[piece.board_pos] = 0
         self.board[destination] = piece
         previous: int = piece.board_pos
+        pawn_direction: int = -1 if piece.color == 'white' else 1
         piece.move(destination)
         # Here I need to check to see if the piece is a pawn for en passant or promotion
         # I also need to check to see if it is a king or rook for castling
-        if piece is isinstance(piece, Pawn):
+        if isinstance(piece, Pawn):
             if piece.y_pos in [0, 700]:
                 self.promote(piece)
             if abs(previous - destination) == 16:
                 self.en_passant = piece.board_pos
+            if previous % 8 != destination % 8 and self.old_piece == 0:
+                self.board[destination + (-pawn_direction * 8)] = 0
+                print("in the en passant capture method")
+                print("En Passant: ", destination + (-pawn_direction * 8))
                 
-        if piece is isinstance(piece, King):
+        if isinstance(piece, King):
             piece.king_side = False
             piece.queen_side = False
             
-        if piece is isinstance(piece, Rook):
+        if isinstance(piece, Rook):
             piece.moved = True
         self.get_all_pieces()
         for piece_on_board in self.pieces:
             piece_on_board.clear_moves()
-    
+        self.full_move_counter += 1
+        if self.turn == 'white':
+            self.turn = 'black'
+        else:
+            self.turn = 'white'
+        self.old_piece = 0
+        
     def capture(self, piece: object, destination: int) -> None:
         '''This method handles capturing pieces'''
         piece_to_capture: object = self.board[destination]
         if piece_to_capture.color != piece.color:
+            self.old_piece = piece_to_capture
             self.board[destination] = 0
             del piece_to_capture
             self.move(piece, destination)
