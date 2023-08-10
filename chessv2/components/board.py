@@ -4,7 +4,10 @@ import pygame
 from pygame import Surface
 from .constants import DARK, LIGHT, SQUARE_SIZE, ROWS
 from .pieces import King, Queen, Pawn, Bishop, Knight, Rook
-
+# TODO The current idea I have for seeing if a piece is valid, is to change the name of get valid pieces
+# and use this current function to get all of the possible moves wihout checking if the king is in check
+# then use the get valid pieces function to see if a king is in check by grabbing all of the possible moves
+# of the opposite color and seeing if the king is in any of those moves
 class Board:
     '''Board object stores board state'''
     def __init__(self) -> None:
@@ -17,7 +20,20 @@ class Board:
         self.turn = 'white'
         self.old_piece: object = None
         self.full_move_counter: int = 0
-    
+        self.half_move_counter: int = 0
+        self.white_pawns: int = 0
+        self.black_pawns: int = 0
+        self.white_knights: int = 0
+        self.black_knights: int = 0
+        self.white_bishops: int = 0
+        self.black_bishops: int = 0
+        self.white_rooks: int = 0
+        self.black_rooks: int = 0
+        self.white_queens: int = 0
+        self.black_queens: int = 0
+        self.black_king: object = None
+        self.white_king: object = None
+        
     def draw_squares(self, win: Surface) -> None:
         '''Draws the squares onto the board'''
         win.fill(DARK)
@@ -39,13 +55,13 @@ class Board:
     def create_board(self) -> None:
         '''This method creates the board'''
         self.fen_to_board(self.current_fen)
-        
+     
     def fen_to_board(self, fen: str) -> None:
         '''This method takes a fen string and converts it to a 0-63 array board'''
         space_counter: int = 0
         x_pos: int = 0
         y_pos: int = 0
-        
+ 
         for char in fen:
             if space_counter > 0:
                 return
@@ -68,6 +84,8 @@ class Board:
                     self.board[board_position] = Queen(board_position, 'black')
                 elif char == 'k':
                     self.board[board_position] = King(board_position, 'black')
+                    self.black_king = self.board[board_position]
+                    print("Black King: ", self.black_king)
                 elif char == 'p':
                     self.board[board_position] = Pawn(board_position, 'black')
                 elif char == 'R':
@@ -80,6 +98,8 @@ class Board:
                     self.board[board_position] = Queen(board_position, 'white')
                 elif char =='K':
                     self.board[board_position] = King(board_position, 'white')
+                    self.white_king = self.board[board_position]
+                    print("White King: ", self.white_king)
                 elif char == 'P':
                     self.board[board_position] = Pawn(board_position, 'white')
                 x_pos += 100
@@ -113,13 +133,15 @@ class Board:
             valid_moves = piece.get_valid_moves(self)
             print("Valid Moves: ", valid_moves)
         return valid_moves
-    
-    def get_all_pieces(self) -> None:
+
+    def get_all_pieces(self, board: list) -> list:
         '''This method gets all the pieces on the board and places them in a list'''
-        for piece in self.board:
+        all_pieces: list = []
+        for piece in board:
             if piece != 0:
-                self.pieces.append(piece)
-    
+                all_pieces.append(piece)
+        return all_pieces
+
     def move(self, piece: object, destination: int) -> None:
         '''This method moves pieces on the board'''
         self.en_passant = -1
@@ -146,7 +168,7 @@ class Board:
             
         if isinstance(piece, Rook):
             piece.moved = True
-        self.get_all_pieces()
+        self.pieces = self.get_all_pieces(self.board)
         for piece_on_board in self.pieces:
             piece_on_board.clear_moves()
         self.full_move_counter += 1
@@ -179,3 +201,20 @@ class Board:
             legal_moves[piece.board_pos] = self.get_valid_moves(piece)
         print("Legal Moves: ", legal_moves)
         return legal_moves
+
+    def is_check(self, board: list, color: str) -> bool:
+        '''This method checks to see if the king is in check'''
+        all_pieces: list = self.get_all_pieces(board)
+        king: object = self.get_king(board, color)
+        for piece in all_pieces:
+            if piece.color != king.color:
+                if king.board_pos in self.get_valid_moves(piece):
+                    return True
+        return False
+
+    def get_king(self, board: list, color: str) -> object:
+        '''This method gets the king object'''
+        for piece in board:
+            if isinstance(piece, King) and piece.color == color:
+                return piece
+        return None

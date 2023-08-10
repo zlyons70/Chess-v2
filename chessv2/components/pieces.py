@@ -1,6 +1,7 @@
 '''This module stores the logic for the pieces'''
 from __future__ import annotations
 from abc import ABCMeta, abstractmethod
+from copy import deepcopy
 import pygame
 from .constants import *
 
@@ -29,6 +30,17 @@ class Piece(metaclass = ABCMeta):
         '''This method clears the valid moves list'''
         self.valid_moves.clear()
 
+    def in_check(self, board: object) -> None:
+        '''This method validates that the king is not in check'''
+        for move in self.valid_moves:
+            temp: list = board.board.copy()
+            temp[self.board_pos] = 0
+            temp[move] = self
+            if board.is_check(temp, self.color):
+                print("Check")
+                print("Move: ", move)
+                self.valid_moves.remove(move)
+
     @abstractmethod
     def get_valid_moves(self, board: object) -> None:
         '''Calculates the valid moves for the piece'''
@@ -51,6 +63,14 @@ class King(Piece):
         self.king_side: bool = True
 
     def get_valid_moves(self, board: object) -> list:
+        offset: list = [-9, -8, -7, -1, 1, 7, 8, 9]
+        for move in offset:
+            if self.board_pos + move >= 0 and self.board_pos + move <= 63 and \
+                    abs(self.board_pos % 8 - (self.board_pos + move) % 8) <= 1:
+                if board.board[self.board_pos + move] != 0 and board.board[self.board_pos + move].color != self.color:
+                    self.valid_moves.append(self.board_pos + move)
+                if board.board[self.board_pos + move] == 0:
+                    self.valid_moves.append(self.board_pos + move)
         return self.valid_moves
 
     def draw(self, win: pygame.Surface) -> None:
@@ -59,9 +79,9 @@ class King(Piece):
         else:
             win.blit(BKING, (self.x_pos, self.y_pos))
 
-    def in_check(self) -> bool:
-        '''This function checks to see if the king is in check'''
-        return False
+    # def in_check(self) -> bool:
+    #     '''This function checks to see if the king is in check'''
+    #     return False
 
     def piece_to_fen(self) -> str:
         return 'k' if self.color == 'black' else 'K'
@@ -73,6 +93,7 @@ class Pawn(Piece):
         super().__init__(board_pos, color)
         self.en_passant: bool = False
         self.en_passant_pos: int = None
+        self.attack_moves: list = []
 
     def get_valid_moves(self, board: object) -> list:
         '''Calculates the valid moves for the pawn'''
@@ -118,6 +139,8 @@ class Pawn(Piece):
                     temp = self.board_pos + 9
                     if self.board_pos - board.en_passant == -1 and temp % 8 != 0:
                         self.valid_moves.append(self.board_pos + 9)
+        if self.color == board.turn:
+            self.in_check(board)
         return self.valid_moves
 
     def draw(self, win: pygame.Surface) -> None:
@@ -284,4 +307,3 @@ class Queen(Piece):
             
     def piece_to_fen(self) -> str:
         return 'q' if self.color == 'black' else 'Q'
-    
