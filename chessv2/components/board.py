@@ -3,7 +3,7 @@ from __future__ import annotations
 import pygame
 from pygame import Surface
 from .constants import DARK, LIGHT, SQUARE_SIZE, ROWS
-from .pieces import King, Queen, Pawn, Bishop, Knight, Rook
+from .pieces import King, Queen, Pawn, Bishop, Knight, Rook, Piece
 # TODO The current idea I have for seeing if a piece is valid, is to change the name of get valid pieces
 # and use this current function to get all of the possible moves wihout checking if the king is in check
 # then use the get valid pieces function to see if a king is in check by grabbing all of the possible moves
@@ -17,6 +17,7 @@ class Board:
         self.board_to_fen()
         self.en_passant: int = -1
         self.pieces: list = []
+        self.attack_moves: list = []
         self.turn = 'white'
         self.old_piece: object = None
         self.full_move_counter: int = 0
@@ -144,6 +145,7 @@ class Board:
 
     def move(self, piece: object, destination: int) -> None:
         '''This method moves pieces on the board'''
+        self.attack_moves = []
         self.en_passant = -1
         self.board[piece.board_pos] = 0
         self.board[destination] = piece
@@ -172,12 +174,12 @@ class Board:
         for piece_on_board in self.pieces:
             piece_on_board.clear_moves()
         self.full_move_counter += 1
+        self.get_all_attacks()
         if self.turn == 'white':
             self.turn = 'black'
         else:
             self.turn = 'white'
         self.old_piece = 0
-        
     def capture(self, piece: object, destination: int) -> None:
         '''This method handles capturing pieces'''
         piece_to_capture: object = self.board[destination]
@@ -202,10 +204,22 @@ class Board:
         print("Legal Moves: ", legal_moves)
         return legal_moves
 
+    def get_all_attacks(self) -> None:
+        '''This method gets all the squares that are being attacked
+        Should be called after every move before the next player's turn'''
+        attack_moves: list[int] = []
+        for piece in self.pieces:
+            if piece.color == self.turn:
+                piece.get_valid_moves(self)
+                attack_moves.extend(piece.attack_moves)
+        self.attack_moves = attack_moves
+
     def is_check(self, board: list, color: str) -> bool:
-        '''This method checks to see if the king is in check'''
-        all_pieces: list = self.get_all_pieces(board)
+        '''This method checks to see if the king is in check
+        Should be called at the beginning of every turn'''
+        all_pieces: list[Piece] = self.get_all_pieces(board)
         king: object = self.get_king(board, color)
+        print("King: ", king)
         for piece in all_pieces:
             if piece.color != king.color:
                 if king.board_pos in self.get_valid_moves(piece):
